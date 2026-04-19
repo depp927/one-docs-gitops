@@ -3,7 +3,7 @@ kind: Kustomization
 
 # 引用 base 层
 resources:
-  - ../../base
+- ../../base
 
 # 命名空间
 namespace: dev
@@ -14,29 +14,29 @@ commonLabels:
 
 # 镜像版本管理：Jenkins CI 通过 `kustomize edit set image` 自动更新 newTag
 images:
-  - name: harbor.onepoker.cc/dev/one-docs
-    newTag: "latest"
+- name: harbor.onepoker.cc/dev/one-docs
+  newTag: "20260419155928_8"
 
 # dev 环境副本数覆盖
 replicas:
-  - name: one-docs
-    count: 1
+- count: 1
+  name: one-docs
 
 # dev 环境资源限制覆盖（比 base 更宽松，节省成本）
 patches:
-  - target:
-      kind: Deployment
-      name: one-docs
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: "50m"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/memory
-        value: "64Mi"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: "200m"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/memory
-        value: "256Mi"
+- patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: "50m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "64Mi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: "200m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "256Mi"
+  target:
+    kind: Deployment
+    name: one-docs
