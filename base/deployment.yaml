@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: one-docs
+  labels:
+    app: one-docs
+    app.kubernetes.io/name: one-docs
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: one-docs
+  # 滚动更新策略：先启新 Pod，再停旧 Pod，实现零停机发布
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: one-docs
+        app.kubernetes.io/name: one-docs
+    spec:
+      # 优雅终止等待时间（秒），确保请求处理完毕再退出
+      terminationGracePeriodSeconds: 30
+      # 镜像拉取凭证（从 Harbor 私有仓库拉取）
+      imagePullSecrets:
+        - name: harbor-registry-secret
+      containers:
+        - name: one-docs
+          # image tag 由 overlay 中的 kustomization.yaml 注入
+          image: harbor.onepoker.cc/dev/one-docs
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          # 资源限制（ACK 集群建议显式设置，避免节点资源争抢）
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # 存活探针：进程挂死时自动重启
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8090
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          # 就绪探针：Pod 就绪后才接收流量，避免发布期间请求失败
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          # 优雅退出：收到 SIGTERM 后等待连接处理完毕
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]

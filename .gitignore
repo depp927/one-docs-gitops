@@ -1,0 +1,3 @@
+# 不提交包含真实凭证的 Secret 文件
+*secret*.yaml
+!harbor-secret-template.yaml

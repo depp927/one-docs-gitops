@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: one-docs-dev
+  namespace: argocd
+  # 随 Application 一起删除所有托管资源
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    # 替换为您的实际 GitOps 仓库地址
+    repoURL: https://github.com/your-org/one-docs-gitops.git
+    targetRevision: main
+    path: overlays/dev
+
+  destination:
+    # ACK 集群内部部署时使用 in-cluster 地址
+    # 如果是外部集群，替换为 ACK 的 API Server 地址
+    server: https://kubernetes.default.svc
+    namespace: dev
+
+  syncPolicy:
+    automated:
+      prune: true       # 自动删除 Git 中已移除的资源
+      selfHeal: true    # 集群状态与 Git 不一致时自动修复
+    syncOptions:
+      - CreateNamespace=true    # 自动创建 namespace
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
